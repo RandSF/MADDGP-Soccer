@@ -1,4 +1,6 @@
 from collections import deque
+from ddpgAgent import DDPGAgent
+from QLearning import QLearningAgent
 import torch
 import numpy as np
 
@@ -49,7 +51,7 @@ class SoccerGame:
             win_rate.append(np.average(memory))
             n = 1000
             if episode % n == n-1:
-                print("episode: {} / {}, win rate={:.2f}, epsilon={:4f}".format(episode,
+                print("episode: {} / {}, win rate={:.2f} epsilon={:4f}".format(episode,
                     self.numEpisode, np.average(memory), epsilon))
             s = self.env.reset()
             step = 0
@@ -74,8 +76,11 @@ class SoccerGame:
                     break
                 s = s_
                 step += 1
-                with torch.no_grad():
-                    q_value.append(self.agent.critic(torch.tensor(([[1,2,1]])),torch.tensor(([[3]]))))
+                if isinstance(self.agent,DDPGAgent):
+                    with torch.no_grad():
+                        q_value.append(self.agent.critic(torch.tensor(([[1,2,1]])),torch.tensor(([[3]])))) # sample a certain sate-action
+                elif isinstance(self.agent,QLearningAgent):
+                        q_value.append(self.agent.q[74][3])
             # if alpha > self.alpha_min:
             #     alpha *= self.alpha_decay
             if epsilon > self.epsilon_min:
