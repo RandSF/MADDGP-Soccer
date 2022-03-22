@@ -26,16 +26,6 @@ class SoccerGame:
         self.opponent = opponent
         self.maxStep = maxStep
 
-    """
-    This function is unnecessary because we temporarily have no need to check a sepcific q-value
-    """
-    # sample a fixed point in agent's Q function space
-    # by default the start position
-    # def __sampleAgentQValue(self, s0=2, s1=1, s2=0, a=1, o=4):
-    #     # special case for Q learning
-    #     if len(self.agent.Q.shape)<5:
-    #         return self.agent.Q[s0,s1,s2,a]
-    #     return self.agent.Q[s0,s1,s2,a,o]
 
     # epsilon defines a unified exploration rate during training for both players
     def train(self):
@@ -48,11 +38,9 @@ class SoccerGame:
         epsilon = self.epsilon_start
         memory = deque(maxlen=100)
         for episode in range(self.numEpisode):
-            win_rate.append(np.average(memory))
             n = 1000
             if episode % n == n-1:
-                print("episode: {} / {}, win rate={:.2f} epsilon={:4f}".format(episode,
-                    self.numEpisode, np.average(memory), epsilon))
+                print("episode: {} / {}, win rate={:.2f} epsilon={:4f}".format(episode,self.numEpisode, np.average(memory), epsilon))
             s = self.env.reset()
             step = 0
             
@@ -72,7 +60,7 @@ class SoccerGame:
                 self.opponent.learn(s, opponentAct, agentAct,
                                         s_, -reward, reward, done)
                 if done or step > self.maxStep:
-                    memory.append(reward==100)
+                    memory.append(reward==100) 
                     break
                 s = s_
                 step += 1
@@ -81,14 +69,9 @@ class SoccerGame:
                         q_value.append(self.agent.critic(torch.tensor(([[1,2,1]])),torch.tensor(([[3]])))) # sample a certain sate-action
                 elif isinstance(self.agent,QLearningAgent):
                         q_value.append(self.agent.q[74][3])
-            # if alpha > self.alpha_min:
-            #     alpha *= self.alpha_decay
             if epsilon > self.epsilon_min:
                     epsilon *= self.epsilon_decay
-            # new_val = self.__sampleAgentQValue()
-            # error.append(abs(new_val - current_val))
-            # current_val = new_val
-        # print(count)
+            win_rate.append(np.average(memory))
         return win_rate,q_value
 
     def play(self, render=True):

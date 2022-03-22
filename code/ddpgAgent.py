@@ -15,11 +15,12 @@ class Actor(nn.Module):
         self.fc2.weight.data.normal_(0,0.1)
         
     def forward(self,s):
-        s=s.to(torch.float32)
+        BATE=1.
+        s=s.float()
         s=self.fc1(s)
         s=F.relu(s)
         s=self.fc2(s)
-        s=F.softmax(s,dim=-1)  # in soccer game a is discrete
+        s=F.softmax(BATE*s,dim=-1)  # in soccer game a is discrete
         return s
     
 class Critic(nn.Module):
@@ -35,7 +36,7 @@ class Critic(nn.Module):
         
     def forward(self,s,a):
         s=torch.cat((s,a),1)
-        s=s.to(torch.float32)
+        s=s.float()
         s=self.fc1(s)
         s=F.relu(s)
         s=self.fc2(s)
@@ -72,10 +73,10 @@ class DDPGAgent(ISoccerGameAgent):
         self.pointer+=1
         
     
-    def act(self,s):
-        with torch.no_grad():
-            a=self.actor(s).argmax(axis=0)#.detach()
-            return a    # return a tensor with shape=(1,batch_a)
+    def act(self,s): #! Do this cause?
+        # with torch.no_grad():
+        a=self.actor(s).argmax(axis=0)#.detach()
+        return a    # return a tensor with shape=(1,batch_a)
     
     
     def learn(self,s,a_agent,a_opponent,s_,r_agent,r_opponent,done):
@@ -103,7 +104,12 @@ class DDPGAgent(ISoccerGameAgent):
         batch_s_=torch.FloatTensor(batch_trans[:,-self.s_size:])
         """forward"""
         pa=self.actor(batch_s)
-        a=pa.argmax(axis=1)
+        #! argmax has no grad, so detach it?
+        # a=pa.argmax(axis=1)  
+        def appox(action_span):
+            return torch.tensor([_ for _ in range(action_span)])
+        
+        a=(pa*appox(self.a_span)).sum(axis=1)
         a=a.reshape((a.shape[0],1))
         q=self.critic(batch_s,a)
         actor_loss=-torch.mean(q)
@@ -113,7 +119,7 @@ class DDPGAgent(ISoccerGameAgent):
         self.actor_optimizer.step()
         
         pa_target=self.actor_target(batch_s)
-        a_target=pa_target.argmax(axis=1)
+        a_target=(pa_target*appox(self.a_span)).sum(axis=1)
         a_target=a_target.reshape((a_target.shape[0],1))
         q_temp=self.critic_target(batch_s,a_target)
         q_target=batch_r+self.gamma * (1-batch_d) * q_temp #! remeber the terminal

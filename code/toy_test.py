@@ -71,7 +71,7 @@ win_rate,q_value=game1.train()
 
 import pandas as pd
 pd.DataFrame(win_rate).to_csv("win_rate.csv")
-pd.DataFrame(q_value).to_csv("q_value.csv")
+pd.DataFrame(np.array(q_value)).to_csv("q_value.csv")
 plt.subplot(1,2,1)
 plt.plot(win_rate, linewidth=0.5)
 plt.subplot(1,2,2)
